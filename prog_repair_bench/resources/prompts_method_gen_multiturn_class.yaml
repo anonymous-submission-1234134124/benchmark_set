@@ -1,0 +1,38 @@
+system_prompt: |
+  You are a helpful programming assistant for Python. Return code in a single code block:
+  ```python
+  CODE```
+  You can think before writing code. You can also add your thinking in the comments. Do not include decorators. Do not provide usage examples. Start with the class declaration.
+
+base_prompt: |
+  Generate code for the class `{class_name}`. Do not generate other part of the file or usage examples, only the target class. Start with class declaration `{class_declaration}`, generated class code should contain class variables and docstrings given in the task. 
+
+
+dp_description: |
+  Description:
+
+  Class name: `{class_name}`
+
+  Class declaration:
+  ```python
+  {class_declaration}```
+  
+  Class variables and docstrings:
+  ```python
+  {class_vars}```
+
+  Class methods in the format [method: method description]:
+  """
+  {class_description}
+  """
+
+  File content:
+  ```python
+  {file_content}```
+
+iter_prompt_template: |
+  Correct the answer. Tests failed:
+  TEST_RESULT:
+  ```
+  {test_output}
+  ```

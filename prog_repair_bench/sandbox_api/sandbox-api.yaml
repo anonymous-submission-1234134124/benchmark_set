@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox-sympy-api
+  namespace: ${namespace}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 7788        # External service port
+      targetPort: 8000  # Container port exposed by the FastAPI app
+  selector:
+    app: sandbox-sympy-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox-sympy-api
+  namespace: ${namespace}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sandbox-sympy-api
+  template:
+    metadata:
+      labels:
+        app: sandbox-sympy-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8000"
+        prometheus.io/scheme: "http"
+    spec:
+      # Pull container image from private registry
+      imagePullSecrets:
+        - name: registry-admin-secret
+
+      # Optionally avoid GPU nodes (similar to python-sandbox)
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+        - key: namespace
+          operator: Exists
+          effect: NoSchedule
+
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+
+      containers:
+        - name: sandbox-sympy-api
+          image: image:tag
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: sandbox-django-api-auth
+          resources:
+            requests:
+              cpu: "8"
+              memory: "8Gi"
+              ephemeral-storage: "5Gi"
+            limits:
+              cpu: "32"
+              memory: "32Gi"
+              ephemeral-storage: "5Gi"
+          env:
+            # AWS secrets.
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: csi-s3-secret
+                  key: accessKeyID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: csi-s3-secret
+                  key: secretAccessKey
+            - name: RAY_TMPDIR
+              value: "/tmp"
+

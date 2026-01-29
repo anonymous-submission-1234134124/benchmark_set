@@ -1,0 +1,110 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${job_name}
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: deployer
+      # We want to schedule the jobs on nodes with GPU and taint.
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+        - key: namespace
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      imagePullSecrets:
+        - name: registry-admin-secret
+      containers:
+        - name: prog-repair-bench-${username}
+          image: ${image_name}
+          command: ${command}
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            - mountPath: /dev/shm
+              name: dshm
+            - name: docker-creds
+              mountPath: /root/.docker
+            - name: config
+              mountPath: /tmp/config
+          resources:
+            requests:
+              nvidia.com/gpu: ${gpu_requests}
+              cpu: ${cpu_requests}
+              memory: ${memory_requests}
+              ephemeral-storage: "5Gi"
+            limits:
+              nvidia.com/gpu: ${gpu_limits}
+              cpu: ${cpu_limits}
+              memory: ${memory_limits}
+              ephemeral-storage: "5Gi"
+          env:
+            # AWS secrets.
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: csi-s3-secret
+                  key: accessKeyID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: csi-s3-secret
+                  key: secretAccessKey
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name:  wandb-hf-svc-account
+                  key: HF_TOKEN
+            - name: WANDB_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wandb-hf-svc-account
+                  key: WANDB_API_KEY
+            - name: BASIC_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sandbox-django-api-auth
+                  key: BASIC_AUTH_USERNAME
+            - name: BASIC_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sandbox-django-api-auth
+                  key: BASIC_AUTH_PASSWORD
+            - name: HF_HOME
+              value: "/tmp"
+            - name: WANDB_USER_EMAIL
+              value: ${wandb_email}
+#            - name: WANDB_PROJECT
+#              value: ${wandb_project}
+      volumes:
+        - name: temp
+          ephemeral:
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: ${tmp_disk_size}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 50Gi
+        - name: config
+          configMap:
+            name: ${configMap}
+        - name: docker-creds
+          secret:
+            secretName: docker-secret
+            items:
+              - key: ".dockerconfigjson"
+                path: config.json
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 120

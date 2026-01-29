@@ -1,0 +1,35 @@
+command: |
+  run-multiturn --config=/tmp/config/config.yaml --autorun --gpu_ids=0 --max_items=-1 --verbose_vllm
+
+# Reference to the training configuration file - will be processed by submit_job.py
+#train_config_file: k8s/example_llama_config.yaml
+namespace: namespace
+
+gpu_requests: 1
+gpu_limits: 1
+cpu_requests: 16
+cpu_limits: 16
+ # RAM size
+memory_requests: "50Gi"
+memory_limits: "50Gi"
+ # Disk size, i.e. for model and results storage
+tmp_disk_size: "50Gi"
+
+
+env:
+  WANDB_BASE_URL: "https://wandb.io/"
+  WANDB_ENTITY: "WANDB_ENTITY"
+  # Setting wandb dirs to save not on root, but dedicated storage
+  WANDB_DATA_DIR: "/tmp/wandb/wandb-data" # location used for staging artifacts during upload. Defaults to ~/.cache/wandb-data/.
+  WANDB_DIR: "/tmp/wandb/wandb" # location of the wandb folder created for your training script. Defaults to ./wandb. This folder stores Run’s data and logs
+  WANDB_ARTIFACT_DIR: "/tmp/wandb/artifacts" # Controls the location where artifacts are downloaded. Defaults to ./artifacts
+  WANDB_CACHE_DIR: "/tmp/wandb/cache" # This is the location where artifacts are created and stored when you call wandb.Artifact. Defaults to ~/.cache/wandb
+  WANDB_CONFIG_DIR: "/tmp/wandb/configs" # Where config files are stored. Defaults to ~/.config/wandb
+  HF_HUB_CACHE: "/tmp/hf_cache"
+  XET_CACHE_TYPE: "/tmp/xet_cache"
+  VLLM_CACHE_ROOT: "/tmp/vllm_cache"
+  VLLM_ASSETS_CACHE: "/tmp/vllm_cache/assets"
+  VLLM_XLA_CACHE_PATH: "/tmp/vllm_cache/xla"
+  TMPDIR: "/tmp"
+  # TODO Restore
+  SANDBOX_URL: "0.0.0.0:7778/run_item"

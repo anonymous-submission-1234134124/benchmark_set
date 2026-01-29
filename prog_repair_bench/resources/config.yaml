@@ -1,0 +1,17 @@
+repository: "django" # available options: "django", "sympy"
+benchmark: "method_gen_multiturn" # options: "method_gen_multiturn", "completion", "program_repair"
+# To specify context in program repair task, use the following (default is "test"):
+# benchmark_parameters:
+#  program_repair:
+#    context: "test" # "test" or "null"
+paths:
+  output_folder: "s3://benchmark_results/"
+inference:
+  think: true # if false adds " /no_think" to each human message.
+  max_iter: 5
+  model_name: "Qwen/Qwen3-1.7B" # Some options: "Qwen/Qwen3-8B" "Qwen/Qwen3-32B" "Qwen/Qwen3-1.7B" "gpt-5-nano"
+  # Folder containing lora adapter checkpoints.
+  lora_ckpts_dir: null
+  # Names of the ckpt folders you want to benchmark. If null, then all ckpts will be benchmarked.
+  lora_ckpts_list:
+    - null

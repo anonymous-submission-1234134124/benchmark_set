@@ -1,0 +1,63 @@
+repository: "django" # available options: "django", "sympy"
+benchmark: "method_gen_multiturn" # available options: "method_gen_multiturn" or "completion", "program_repair"
+benchmark_parameters:
+  method_gen_multiturn:
+    gen_target: "method" # "method" or "class"
+  program_repair:
+    context: "test" # "test" or "null"
+  completion: null
+paths:
+  format_run_name: true
+  docker_commands: null # default is resources/dockerfile_commands
+  output_folder: "s3://benchmark_results/"
+  output_filename: "results.jsonl"
+  prompts: null # default is resources/prompts.yaml
+  # used for downloading files from s3.
+  local_dir: "/tmp/benchmark_files/" # default is .cache/benchmark_files/
+# Path to the data folder is hardcoded for each dataset, but you can override it here.
+# data:
+  # Data path could be either local or s3.
+  # If you pass s3, then it will first download data into .cache/data/ folder
+wandb:
+  project_name: "multiturn-inference"
+  run_name: null
+inference:
+  log_to_console: false
+  sandbox_provider: "restapi" # local, restapi, or cloud [not supported for now]
+  provider: "vllm" # Only options vllm, litellm
+  model_name: "Qwen/Qwen3-1.7B" # Some options: "Qwen/Qwen3-8B" "Qwen/Qwen3-32B" "Qwen/Qwen3-1.7B" "gpt-5-nano"
+  # Folder containing lora adapter checkpoints.
+  lora_ckpts_dir: null
+  # Names of the ckpt folders you want to benchmark. If null, then all ckpts will be benchmarked.
+  lora_ckpts_list:
+    - null
+  max_iter: 5
+  think: true # if false adds " /no_think" to each human message.
+  context_source: "file" # "file" of "class"
+  max_test_feedback_symb: 20000
+  max_context_symb: 60000
+  max_time_test_norm: 2 # Filter out very long tests. If not filtering, you can pass null
+  max_num_tests: 20
+  batch_size: 144
+  model_args:
+    temperature: 0.0
+    max_tokens: 10000
+    seed: 42
+  # Arguments for control experiments
+  no_feedback: false # runs multiturn, but does not add any feedback, keeps history.
+  no_multiturn: false # runs sampling loop, but does not add any previous results and feedback.
+  no_history: false # Keep only task and the last AI message in the chat history
+  repair_sampling: false # Pass @k of repair of same AI solution
+  check_ground_truth: false
+inference_pars:
+  num_workers: 1
+  # Network reliability settings
+  max_retries: 5
+  retry_delay: 15.
+  timeout: 20
+docker:
+  # This would not be used in the k8s run
+  cpu_period: 100000  # Standard period: 100ms in microseconds
+  cpu_quota: 400000  # 4 cores worth: 8 * 100,000 microseconds
+  memory: 6GB  # Hard memory limit
+  memory_reservation: 4GB

@@ -1,0 +1,105 @@
+[project]
+name = "prog-repair-bench"
+version = "1.2.1.1"
+description = "Multi-Turn Inference with Sandbox testing"
+readme = "README.md"
+# TODO restore authors
+authors = [{name = "Anonym Author1", email = "Anonym.Author1@domain.com"},
+    {name = "Anonym Author2", email = "Anonym.Author2@domain.com"},
+    {name = "Anonym Author3", email = "Anonym.Author3@domain.com"}]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = "^3.12 <3.13"
+omegaconf = "^2.3.0"
+fire = "*"
+pyyaml = "*"
+
+langchain-core = { version = "^0.3.72", optional = true }
+langchain = { version = "0.3.27", optional = true }
+langchain-openai = { version = "^0.3.16", optional = true }
+langgraph = { version = "^0.4.3", optional = true }
+wandb = { version = "^0.22.3", optional = true }
+python-dotenv = { version = "^1.0.0", optional = true }
+tqdm = { version = "^4.66.0", optional = true }
+datasets = { version = "^4.0", optional = true }
+s3fs = { version = "^2024.12.0", optional = true } # "^2025.3.2"
+fsspec = { version = "^2024.12.0", optional = true }
+aiohttp = { version = "^3.9.0", optional = true }
+requests = { version = "^2.31.0", optional = true }
+vllm = { version = "^0.12.0", optional = true }
+# Reporting/plotting dependencies
+plotly = { version = "*", optional = true }
+matplotlib = { version = "*", optional = true }
+UpSetPlot = { version = "*", optional = true }
+python-Levenshtein = { version = "*", optional = true }
+wandb-workspaces = { version = "*", optional = true }
+black = { version = "*", optional = true }
+isort = { version = "*", optional = true }
+ruff = { version = "*", optional = true }
+mypy = { version = "*", optional = true }
+sacrebleu = { version = "*", optional = true }
+
+[tool.poetry.extras]
+local = [
+  "langchain-core",
+  "langchain",
+  "langchain-openai",
+  "langgraph",
+  "wandb",
+  "python-dotenv",
+  "tqdm",
+  "datasets",
+  "s3fs",
+  "fsspec",
+  "aiohttp",
+  "requests",
+  "vllm",
+  "uvicorn",
+  "plotly",
+  "matplotlib",
+  "UpSetPlot",
+  "boltons",
+  "seaborn",
+  "python-Levenshtein",
+  "wandb-workspaces",
+  "black",
+  "isort",
+  "ruff",
+  "mypy",
+  "sacrebleu"
+]
+
+[tool.poetry.scripts]
+run-multiturn-k8s = "prog_repair_bench.submit_k8s_job:run_on_k8s"
+run-multiturn = "prog_repair_bench.__main__:run_main"
+serve-vllm = "prog_repair_bench.__main__:serve_vllm"
+kill-vllm = "prog_repair_bench.__main__:kill_vllm"
+get-config = "prog_repair_bench.copy_resources:get_config"
+get-prompts = "prog_repair_bench.copy_resources:get_prompts"
+get-dockerfile = "prog_repair_bench.copy_resources:get_dockerfile"
+get-resources = "prog_repair_bench.copy_resources:get_resources"
+serve-restapi-k8s = "prog_repair_bench.sandbox_api.submit_service:submit_sandbox_service_on_k8s"
+kill-restapi-k8s = "prog_repair_bench.sandbox_api.submit_service:kill_sandbox_service_on_k8s"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[[tool.mypy.overrides]]
+module = ["s3fs.*", "datasets.*"]
+ignore_missing_imports = true

@@ -1,0 +1,91 @@
+USER root
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y \
+            curl \
+            wget \
+            llvm \
+            build-essential \
+            xz-utils \
+            libssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libreadline-dev \
+            libsqlite3-dev \
+            libgdbm-dev \
+            libdb5.3-dev \
+            libbz2-dev \
+            libexpat1-dev \
+            liblzma-dev \
+            tk-dev \
+            uuid-dev \
+            libmemcached-dev \
+            libffi-dev
+
+# Download and extract CPython 3.5.10
+RUN set -eux; \
+    curl -O https://www.python.org/ftp/python/3.5.10/Python-3.5.10.tgz; \
+    tar xzf Python-3.5.10.tgz
+
+# Create patch to fix segfault
+RUN set -eux; \
+    printf '%s\n' \
+    '--- Include/objimpl.h' \
+    '+++ Include/objimpl.h' \
+    '@@ -250,7 +250,7 @@' \
+    '         union _gc_head *gc_prev;' \
+    '         Py_ssize_t gc_refs;' \
+    '     } gc;' \
+    '-    double dummy;  /* force worst-case alignment */' \
+    '+    long double dummy;  /* force worst-case alignment */' \
+    ' } PyGC_Head;' \
+    ' ' \
+    ' extern PyGC_Head *_PyGC_generation0;' \
+    '--- Objects/obmalloc.c' \
+    '+++ Objects/obmalloc.c' \
+    '@@ -643,8 +643,8 @@' \
+    '  *' \
+    '  * You shouldn'"'"'t change this unless you know what you are doing.' \
+    '  */' \
+    '-#define ALIGNMENT               8               /* must be 2^N */' \
+    '-#define ALIGNMENT_SHIFT         3' \
+    '+#define ALIGNMENT               16               /* must be 2^N */' \
+    '+#define ALIGNMENT_SHIFT         4' \
+    ' ' \
+    ' /* Return the number of bytes in size class I, as a uint. */' \
+    ' #define INDEX2SIZE(I) (((uint)(I) + 1) << ALIGNMENT_SHIFT)' \
+    > Python-3.5.10/segfault.patch
+
+# Patch, build & install CPython
+RUN set -eux; \
+    cd Python-3.5.10; \
+    patch -p0 < segfault.patch; \
+    ./configure; \
+    make -j"$(nproc)"; \
+    make altinstall; \
+    cd ..; \
+    rm -rf Python-3.5.10*
+
+# Bootstrap tools that still support Py3.5
+RUN set -eux; \
+    /usr/local/bin/python3.5 -m ensurepip; \
+    /usr/local/bin/python3.5 -m pip install --upgrade "pip<21" "setuptools<50" wheel
+
+# Create a venv and make it the default python/pip via PATH
+RUN /usr/local/bin/python3.5 -m venv /opt/py35
+ENV PATH="/opt/py35/bin:${PATH}"
+
+# Ensure appuser can write packages into the venv
+RUN chown -R appuser:appuser /opt/py35
+
+# (Optional) avoid noisy pip version checks in old envs
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# --- your original lines, unchanged ---
+USER appuser
+RUN set -eux; \
+    python --version; \
+    python -m ensurepip; \
+    pip3 install -e $SANDBOX_PROJECT_ROOT
